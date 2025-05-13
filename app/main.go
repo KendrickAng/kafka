@@ -41,10 +41,10 @@ func handleConnection(conn net.Conn) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Received message: ", string(clientMsg))
+	fmt.Printf("Received message: %s", clientMsg)
 
 	n, err := conn.Write(buildClientResponse())
-	fmt.Println("Wrote bytes: ", n)
+	fmt.Printf("Wrote bytes: %d", n)
 
 	return err
 }
