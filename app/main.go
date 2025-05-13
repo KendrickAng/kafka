@@ -41,25 +41,22 @@ func handleConnection(conn net.Conn) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Received message: %s", clientMsg)
+	fmt.Printf("Received message: %s\n", clientMsg)
 
 	n, err := conn.Write(buildClientResponse())
-	fmt.Printf("Wrote bytes: %d", n)
+	fmt.Printf("Wrote bytes: %d\n", n)
 
 	return err
 }
 
 func buildClientResponse() []byte {
-	var buf bytes.Buffer
+	buffer := make([]byte, 8)
 
 	// message_size
-	var messageSize [4]byte
-	binary.BigEndian.PutUint32(messageSize[:], uint32(0))
-	buf.Write(messageSize[:])
+	binary.BigEndian.PutUint32(buffer[:4], 0)
 
 	// correlation_id
-	var correlationId int32 = 7
-	binary.Write(&buf, binary.BigEndian, correlationId)
+	binary.BigEndian.PutUint32(buffer[4:], 0)
 
-	return buf.Bytes()
+	return buffer
 }
