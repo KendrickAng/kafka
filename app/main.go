@@ -26,6 +26,7 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
+	defer conn.Close()
 
 	if err := handleConnection(conn); err != nil {
 		fmt.Println("Error handling connection: ", err.Error())
@@ -34,8 +35,6 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) error {
-	defer conn.Close()
-
 	clientMsg, err := io.ReadAll(conn)
 	if err != nil {
 		return err
