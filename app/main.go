@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
-	"io"
 	"net"
 	"os"
 )
@@ -28,6 +27,7 @@ func main() {
 	}
 	defer conn.Close()
 
+	fmt.Println("Handling connection from", conn.RemoteAddr())
 	if err := handleConnection(conn); err != nil {
 		fmt.Println("Error handling connection: ", err.Error())
 		os.Exit(1)
@@ -35,14 +35,17 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) error {
-	clientMsg, err := io.ReadAll(conn)
+	var buffer [4096]byte // arbitary size
+
+	n, err := conn.Read(buffer[:])
+	fmt.Println("Read bytes:", n, len(buffer[:]))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Received message: %s\n", clientMsg)
+	fmt.Println("Received message:", string(buffer[:n]))
 
-	n, err := conn.Write(buildClientResponse())
-	fmt.Printf("Wrote bytes: %d\n", n)
+	n, err = conn.Write(buildClientResponse())
+	fmt.Println("Wrote bytes:", n)
 
 	return err
 }
@@ -54,7 +57,7 @@ func buildClientResponse() []byte {
 	binary.BigEndian.PutUint32(buffer[:4], 0)
 
 	// correlation_id
-	binary.BigEndian.PutUint32(buffer[4:], 0)
+	binary.BigEndian.PutUint32(buffer[4:], 7)
 
 	return buffer
 }
