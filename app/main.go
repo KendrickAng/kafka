@@ -35,24 +35,18 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) error {
-	// var buffer [4096]byte // arbitary size
-
-	// n, err := conn.Read(buffer[:])
-	// fmt.Printf("Read %d bytes, message: %s\n", n, string(buffer[:n]))
-	// if err != nil {
-	// 	return err
-	// }
-
+	// Read a single request from the Kafka client.
 	req, err := readClientRequest(conn)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Read client request, size %d, correlation id %d", req.MessageSize, req.Header.CorrelationId())
+	fmt.Printf("Read client request, size %d, correlation id %d\n", req.MessageSize, req.Header.CorrelationId())
 
 	resp := handleClientRequest(req)
 
+	// Return response from Kafka broker.
 	n, err := conn.Write(resp.Encode())
-	fmt.Printf("Wrote %d bytes, message: %x\n", n, resp)
+	fmt.Printf("Wrote %d bytes, message: %+v\n", n, resp)
 
 	return err
 }
@@ -86,5 +80,7 @@ func readClientRequest(conn net.Conn) (*Request, error) {
 }
 
 func handleClientRequest(req *Request) *Response {
-	return NewResponse(0, req.Header.CorrelationId())
+	// Assume that request api key is 18 (ApiVersions API)
+	// Assume that error code is 35
+	return NewResponseForApiVersions(0, req.Header.CorrelationId(), 35)
 }

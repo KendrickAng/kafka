@@ -8,6 +8,7 @@ type Request struct {
 }
 
 type RequestHeader interface {
+	RequestApiVersion() int16
 	CorrelationId() int32
 }
 
@@ -18,9 +19,10 @@ func NewRequest(size int32, headerAndBody []byte) *Request {
 	}
 }
 
+// RequestHeaderV2 - see https://kafka.apache.org/protocol.html#protocol_messages.
 type RequestHeaderV2 struct {
 	RequestApiKey     int16
-	RequestApiVersion int16
+	requestApiVersion int16
 	correlationId     int32
 
 	// TODO: handle these later
@@ -31,7 +33,7 @@ type RequestHeaderV2 struct {
 func NewRequestHeaderV2(headerAndBody []byte) *RequestHeaderV2 {
 	return &RequestHeaderV2{
 		RequestApiKey:     int16(binary.BigEndian.Uint16(headerAndBody[0:2])),
-		RequestApiVersion: int16(binary.BigEndian.Uint16(headerAndBody[2:4])),
+		requestApiVersion: int16(binary.BigEndian.Uint16(headerAndBody[2:4])),
 		correlationId:     int32(binary.BigEndian.Uint32(headerAndBody[4:8])),
 	}
 }
@@ -39,3 +41,5 @@ func NewRequestHeaderV2(headerAndBody []byte) *RequestHeaderV2 {
 func (v2 *RequestHeaderV2) CorrelationId() int32 {
 	return v2.correlationId
 }
+
+func (v2 *RequestHeaderV2) RequestApiVersion() int16 { return v2.requestApiVersion }
