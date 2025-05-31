@@ -35,29 +35,56 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) error {
-	var buffer [4096]byte // arbitary size
+	// var buffer [4096]byte // arbitary size
 
-	n, err := conn.Read(buffer[:])
-	fmt.Println("Read bytes:", n, len(buffer[:]))
+	// n, err := conn.Read(buffer[:])
+	// fmt.Printf("Read %d bytes, message: %s\n", n, string(buffer[:n]))
+	// if err != nil {
+	// 	return err
+	// }
+
+	req, err := readClientRequest(conn)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Received message:", string(buffer[:n]))
+	fmt.Printf("Read client request, size %d, correlation id %d", req.MessageSize, req.Header.CorrelationId())
 
-	n, err = conn.Write(buildClientResponse())
-	fmt.Println("Wrote bytes:", n)
+	resp := handleClientRequest(req)
+
+	n, err := conn.Write(resp.Encode())
+	fmt.Printf("Wrote %d bytes, message: %x\n", n, resp)
 
 	return err
 }
 
-func buildClientResponse() []byte {
-	buffer := make([]byte, 8)
+func readClientRequest(conn net.Conn) (*Request, error) {
+	var messageSizeBuf [4]byte
+	n, err := conn.Read(messageSizeBuf[:])
+	if err != nil {
+		return nil, err
+	}
+	if n != 4 {
+		return nil, fmt.Errorf("expected 4 bytes, got %d", n)
+	}
 
-	// message_size
-	binary.BigEndian.PutUint32(buffer[:4], 0)
+	// Get size of the request from first 4 bytes
+	messageSize := int32(binary.BigEndian.Uint32(messageSizeBuf[:]))
+	if messageSize < 0 {
+		return nil, fmt.Errorf("invalid message size: %d", messageSize)
+	}
 
-	// correlation_id
-	binary.BigEndian.PutUint32(buffer[4:], 7)
+	requestBytes := make([]byte, messageSize)
+	n, err = conn.Read(requestBytes)
+	if err != nil {
+		return nil, err
+	}
+	if n != int(messageSize) {
+		return nil, fmt.Errorf("expected %d bytes, got %d", messageSize, n)
+	}
 
-	return buffer
+	return NewRequest(messageSize, requestBytes), nil
+}
+
+func handleClientRequest(req *Request) *Response {
+	return NewResponse(0, req.Header.CorrelationId())
 }
